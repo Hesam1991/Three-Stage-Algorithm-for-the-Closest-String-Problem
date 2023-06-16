@@ -175,10 +175,10 @@ if __name__ == '__main__':
     ### read terminal arguments:
     
     argv = sys.argv[1:]
-    opts, args = getopt.getopt(argv,"ht:i:o:",["time=", "ifile=","ofile="])
+    opts, args = getopt.getopt(argv,"ht:i:o:m:",["time=", "ifile=","ofile=", "model="])
     for opt, arg in opts:
       if opt == '-h':
-         print ('test.py -i <inputfile> -o <outputfile> -t <timelimit>')
+         print ('test.py -i <inputfile> -o <outputfile> -t <timelimit> -m  <ILP-model-applied>')
          sys.exit()
       elif opt in ("-i", "--ifile"):
            input_file = arg
@@ -186,11 +186,14 @@ if __name__ == '__main__':
            out_file = arg
       elif opt in ("-t", "--time"):
            timelimit = arg
+      elif opt in ("-m", "--model"):
+           model_num = arg
            
     print ('Input file is ', input_file)
     print ('Output file is ', out_file)
     print ('Time: ', timelimit)
-
+    print("model num: ", model_num)
+    
     ### end reading terminal params
     
     strings, alphabet = read_instance(input_file)
