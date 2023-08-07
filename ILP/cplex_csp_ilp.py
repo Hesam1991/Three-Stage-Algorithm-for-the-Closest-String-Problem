@@ -169,7 +169,7 @@ if __name__ == '__main__':
     char_to_int = {}
     timelimit: float = 60.0 #sec
     model_num: int = 3 # ILP-1 or ILP-3 for now implemented
-    input_file = "4_10_600.virus"
+    input_file = "ILP/Tdata_new_format.txt"
     out_file = "input_file" + ".out" 
     
     ### read terminal arguments:
@@ -203,10 +203,10 @@ if __name__ == '__main__':
     ### Run ILP solver (CPLEX):
     curr = time()
     if model_num == 1:
-    	primal, dual, status = ILP1(strings_converted, alphabet, timelimit, 0)
+        primal, dual, status = ILP1(strings_converted, alphabet, timelimit, 0)
     else:
-    	primal, dual, status = ILP3(strings_converted, alphabet, timelimit, 0)
-    	
+        primal, dual, status = ILP3(strings_converted, alphabet, timelimit, 0)
+        
     time_execute = time() - curr
     print("Solution: ", primal, "\nDual bound: ",  dual, "\nStatus: ", status, "\nTime: ", time_execute)
     # Save into a file: 
