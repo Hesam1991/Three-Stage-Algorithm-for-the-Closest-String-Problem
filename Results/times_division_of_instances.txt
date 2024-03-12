@@ -1,0 +1,5 @@
+Instance division and running times passed to CPLEX:
+
+1) Small instances: n<400, approx. 30 sec (a bit less but is still fair to fix it this way)
+2) Medium-sized instances: 400 <=n < 1000, approx. 1 min
+3) Large-sized instances: n>=1000, approx.  2 min
