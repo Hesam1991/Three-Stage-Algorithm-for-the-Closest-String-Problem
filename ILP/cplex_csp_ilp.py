@@ -11,7 +11,7 @@ import sys, getopt
 if name == 'nt': # windows
     cplex_path = r'C:\Program Files\IBM\ILOG\CPLEX_Studio221\cplex\bin\x64_win64\cplex.exe'
 else:
-    cplex_path= r'/home/marko/Desktop/CPLEX_Studio127/cplex/bin/x86-64_linux/cplex'
+    cplex_path= r'/home/marko/Desktop/cplex/cplex/bin/x86-64_linux/cplex' # r'/home1/share/ILOG/cplex-12.8.0/cplex/bin/x86-64_linux/cplex' (Vienna server)
 
 
 def conversion_chars_to_nums(strings: list):
@@ -34,34 +34,52 @@ def conversion_chars_to_nums(strings: list):
                char_to_int[si] = char_num
                char_num += 1 #next unused char
     
+    #print("Converted: ", strings_converted[0])
     return strings_converted
+
+
+# read random instances provided by Abdi
+def read_instance_abdi(path):
+    
+    strings = []
+    alpha = set()
+    with open(path, "r") as f:
+        
+        for line in f:
+            s = line.strip().replace(' ', '')
+            #print(s + "|", " ", len(s))
+            for ch in s:
+                alpha.add(ch)
+             
+            strings.append(s)
+    
+    #print("s0:|", strings[0], "|", len(strings[0]))
+    return strings, len(alpha)
+
 
 def read_instance(path):
 
 
-     strings = []
-     f = open(path, "r")
-     params = f.readline()
+    strings = []
+    f = open(path, "r")
+    params = f.readline()
      
-     m, alpha = params.split("\t")
-     m, alpha = int(m.strip()), int(alpha.strip())
-     
-     print(m, " ---- ", alpha)
-     
-     while(True): 
-         
-         line = f.readline()
-         if line == "":
-             break
-         else:
-             
-             n, string = line.split("\t")
-             s = string.strip()
-             strings.append(s)
-     
-     return strings, alpha
-      
+    m, alpha = params.split("\t")
+    m, alpha = int(m.strip()), int(alpha.strip())
     
+    #print(m, " ---- ", alpha) 
+    while(True): 
+         
+        line = f.readline()
+        if line == "":
+            break
+        else:
+             
+            n, string = line.split("\t")
+            s = string.strip()
+            strings.append(s)
+     
+    return strings, len(alpha)   
     
 def ILP1(strings: list, alpha_size: int, timelimit: float, ind: int):
 
@@ -82,8 +100,9 @@ def ILP1(strings: list, alpha_size: int, timelimit: float, ind: int):
         model += lpSum([ z[ (i, k) ] for k in range(len(strings[0])) ] )  <= d
           
     ## constraints (3): 
+    print(strings[0], " length: ", len(strings[0]))
     for i in range(len(strings)):
-        for k in range(len(strings[0])):
+        for k in range(len(strings[0])):  
             model += ( t[k] - strings[i][k] <= K * z[ (i, k) ] )
     
     ## constraints (4): 
@@ -115,7 +134,7 @@ def ILP1(strings: list, alpha_size: int, timelimit: float, ind: int):
 
 
 ########### The third model from  Meneses et al. (2004): Section 2.4 
-def ILP3(strings: list, alpha_size: int, timelimit: float, ind: int):
+def ILP3(strings: list, alpha_size: int, timelimit: float, ind: str):
 
     # preprocessing:
     V = dict()
@@ -126,7 +145,7 @@ def ILP3(strings: list, alpha_size: int, timelimit: float, ind: int):
         
         V[k] = vk
         
-    print(V)
+    #print(V)
     # building model:
     model3 = LpProblem("CSP-3", LpMinimize)
     # define decision vars V_k: k-th characters 
@@ -146,14 +165,14 @@ def ILP3(strings: list, alpha_size: int, timelimit: float, ind: int):
     
     # solve the model:
     solver = pl.CPLEX_CMD(path=cplex_path, timeLimit=timelimit, 
-             logPath="log_info-3"+str(ind)+".log", msg=False, threads=1)
+             logPath="log_info-"+ (ind).split("/")[-1] +".log", msg=False, threads=1)
     model3.solve(solver)   #PULP_CBC_CMD(maxSeconds=timelimit, msg=True, fracGap=0))
 
     # stats -- retrieve gap: 
-    logs_dict = orloge.get_info_solver("log_info-3"+str(ind)+".log", "CPLEX" ) # Orloge returns a dict with all logs info
+    logs_dict = orloge.get_info_solver("log_info-"+ (ind).split("/")[-1] +".log", "CPLEX" ) # Orloge returns a dict with all logs info
     best_bound, best_solution, status = logs_dict["best_bound"], logs_dict["best_solution"], logs_dict["status"]
 
-    remove("log_info-3"+str(ind)+".log")
+    remove("log_info-" + (ind).split("/")[-1] +".log")
     
     return best_solution, ceil(best_bound), int(status == "MIP - Integer optimal") 
 
@@ -168,11 +187,11 @@ if __name__ == '__main__':
     # DEFAULT params and global vars:
     char_to_int = {}
     timelimit: float = 60.0 #sec
-    model_num: int = 3 # ILP-1 or ILP-3 for now implemented
+    model_num: int = 1 # ILP-1 or ILP-3 for now implemented
     input_file = "ILP/Tdata_new_format.txt"
     out_file = "input_file" + ".out" 
     
-    ### read terminal arguments:
+    ### read terminal arguments: (an example of execution: python3 cplex_csp_ilp.py -i 4_10_600.virus -o out.txt -t 100 -m 1)  
     
     argv = sys.argv[1:]
     opts, args = getopt.getopt(argv,"ht:i:o:m:",["time=", "ifile=","ofile=", "model="])
@@ -187,28 +206,30 @@ if __name__ == '__main__':
       elif opt in ("-t", "--time"):
            timelimit = arg
       elif opt in ("-m", "--model"):
-           model_num = arg
-           
+           model_num = int(arg)
+    '''       
     print ('Input file is ', input_file)
     print ('Output file is ', out_file)
     print ('Time: ', timelimit)
     print("model num: ", model_num)
-    
+    '''
     ### end reading terminal params
     
-    strings, alphabet = read_instance(input_file)
+    strings, alphabet = read_instance_abdi(input_file) #read_instance(input_file)
     # preprocessing:
+    print("Alphabet size: ", alphabet)
+    
     strings_converted = conversion_chars_to_nums(strings) 
     
     ### Run ILP solver (CPLEX):
     curr = time()
     if model_num == 1:
-        primal, dual, status = ILP1(strings_converted, alphabet, timelimit, 0)
+        primal, dual, status = ILP1(strings_converted, alphabet, timelimit, input_file)
     else:
-        primal, dual, status = ILP3(strings_converted, alphabet, timelimit, 0)
+        primal, dual, status = ILP3(strings_converted, alphabet, timelimit, input_file)
         
     time_execute = time() - curr
-    print("Solution: ", primal, "\nDual bound: ",  dual, "\nStatus: ", status, "\nTime: ", time_execute)
+    #print("Solution: ", primal, "\nDual bound: ",  dual, "\nStatus: ", status, "\nTime: ", time_execute)
     # Save into a file: 
     f = open(out_file, "w")
     string_stat = "Solution: " + str(primal) + " Dual bound: " +  str(dual) + " Status: " + str(status) +" Time: " + str(time_execute)
